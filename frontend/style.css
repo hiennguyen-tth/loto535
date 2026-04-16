@@ -1,0 +1,362 @@
+:root {
+    --bg: #f0f2f5;
+    --card: #ffffff;
+    --primary: #185FA5;
+    --primary-light: #e8f0fb;
+    --hot: #E24B4A;
+    --gap: #D85A30;
+    --db: #7B2D8B;
+    --db-light: #f3e8f7;
+    --text: #1a1a1a;
+    --muted: #666;
+    --border: #ececec;
+    --radius: 10px;
+    --shadow: 0 1px 4px rgba(0, 0, 0, .08);
+}
+
+/* ── Reset ─────────────────────────────────────────── */
+*,
+*::before,
+*::after {
+    box-sizing: border-box;
+    margin: 0;
+    padding: 0;
+}
+
+body {
+    font-family: system-ui, -apple-system, "Segoe UI", sans-serif;
+    background: var(--bg);
+    color: var(--text);
+    font-size: 15px;
+    line-height: 1.5;
+}
+
+/* ── Header ─────────────────────────────────────────── */
+header {
+    background: var(--primary);
+    color: #fff;
+    padding: .85rem 1.5rem;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    position: sticky;
+    top: 0;
+    z-index: 100;
+    box-shadow: 0 2px 6px rgba(0, 0, 0, .2);
+}
+
+header h1 {
+    font-size: 1.2rem;
+    font-weight: 700;
+}
+
+#last-update {
+    font-size: .75rem;
+    opacity: .85;
+}
+
+/* ── Error banner ────────────────────────────────────── */
+.error-banner {
+    background: #fff3cd;
+    border-left: 4px solid #f6a821;
+    padding: .75rem 1.5rem;
+    font-size: .85rem;
+    color: #7a5000;
+}
+
+.hidden {
+    display: none !important;
+}
+
+/* ── Stats row ───────────────────────────────────────── */
+.stats-row {
+    display: flex;
+    gap: 12px;
+    padding: 1rem 1.5rem;
+    flex-wrap: wrap;
+}
+
+.stat-card {
+    background: var(--card);
+    border-radius: var(--radius);
+    padding: 12px 18px;
+    flex: 1;
+    min-width: 130px;
+    box-shadow: var(--shadow);
+}
+
+.stat-card .val {
+    font-size: 1.65rem;
+    font-weight: 700;
+    color: var(--primary);
+    letter-spacing: -.5px;
+}
+
+.stat-card .lbl {
+    font-size: .72rem;
+    color: var(--muted);
+    margin-top: 2px;
+    text-transform: uppercase;
+    letter-spacing: .02em;
+}
+
+/* skeleton loader */
+.skeleton {
+    height: 72px;
+    animation: pulse 1.4s ease-in-out infinite;
+}
+
+@keyframes pulse {
+
+    0%,
+    100% {
+        opacity: 1;
+    }
+
+    50% {
+        opacity: .4;
+    }
+}
+
+/* ── Card ────────────────────────────────────────────── */
+.card {
+    background: var(--card);
+    border-radius: var(--radius);
+    padding: 1.2rem 1.5rem;
+    margin: 0 1.5rem 1rem;
+    box-shadow: var(--shadow);
+}
+
+.card h2 {
+    font-size: .95rem;
+    font-weight: 600;
+    margin-bottom: .9rem;
+    color: var(--text);
+}
+
+.card h2 small {
+    font-weight: 400;
+    color: var(--muted);
+    font-size: .75rem;
+}
+
+.two-col {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 1.5rem;
+}
+
+@media (max-width: 600px) {
+    .two-col {
+        grid-template-columns: 1fr;
+    }
+
+    .stats-row {
+        gap: 8px;
+    }
+
+    .card {
+        margin: 0 .75rem .75rem;
+        padding: 1rem;
+    }
+}
+
+/* ── Balls ───────────────────────────────────────────── */
+.ball-row {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 7px;
+    align-items: center;
+}
+
+.ball {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 40px;
+    height: 40px;
+    border-radius: 50%;
+    font-weight: 700;
+    font-size: .9rem;
+    user-select: none;
+    flex-shrink: 0;
+}
+
+.ball.main {
+    background: var(--primary);
+    color: #fff;
+}
+
+.ball.db {
+    background: var(--db);
+    color: #fff;
+}
+
+.separator {
+    color: var(--muted);
+    font-size: 1.1rem;
+    margin: 0 2px;
+}
+
+.ky-label {
+    margin-left: 10px;
+    font-size: .82rem;
+    color: var(--muted);
+}
+
+/* ── Prediction sets ─────────────────────────────────── */
+.pred-set {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 9px 12px;
+    border-radius: 8px;
+    margin-bottom: 6px;
+    background: #f7f8fa;
+    border: 1px solid var(--border);
+    flex-wrap: wrap;
+}
+
+.pred-label {
+    font-size: .78rem;
+    color: var(--muted);
+    min-width: 170px;
+    font-weight: 500;
+}
+
+/* ── Tags ────────────────────────────────────────────── */
+.tag-row {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 6px;
+}
+
+.tag {
+    padding: 4px 11px;
+    border-radius: 12px;
+    font-size: .78rem;
+    font-weight: 600;
+    cursor: default;
+    white-space: nowrap;
+}
+
+.tag.hot {
+    background: #FAECE7;
+    color: var(--gap);
+}
+
+.tag.gap {
+    background: #F5C4B3;
+    color: #4A1B0C;
+}
+
+/* ── Frequency chart ─────────────────────────────────── */
+#freq-chart {
+    display: flex;
+    flex-direction: column;
+    gap: 3px;
+    margin-top: 8px;
+}
+
+.freq-row {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.freq-num {
+    font-size: 11px;
+    min-width: 22px;
+    text-align: right;
+    color: var(--muted);
+}
+
+.freq-bar {
+    height: 14px;
+    border-radius: 3px;
+    background: var(--primary);
+    transition: width .35s ease;
+    min-width: 4px;
+}
+
+.freq-bar.highlight {
+    background: var(--hot);
+}
+
+.freq-cnt {
+    font-size: 11px;
+    color: var(--muted);
+}
+
+/* ── History table ───────────────────────────────────── */
+table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: .83rem;
+}
+
+th,
+td {
+    text-align: center;
+    padding: 6px 8px;
+    border-bottom: 1px solid var(--border);
+}
+
+th {
+    color: var(--muted);
+    font-weight: 500;
+    font-size: .75rem;
+    text-transform: uppercase;
+}
+
+tr:hover td {
+    background: #fafafa;
+}
+
+.buoi-s {
+    color: var(--primary);
+    font-weight: 700;
+}
+
+.buoi-t {
+    color: var(--hot);
+    font-weight: 700;
+}
+
+/* ── Toggle buttons ──────────────────────────────────── */
+.toggle-row {
+    display: flex;
+    gap: 8px;
+    margin-bottom: 12px;
+    flex-wrap: wrap;
+}
+
+.btn {
+    padding: 5px 14px;
+    border: 1px solid #ddd;
+    border-radius: 6px;
+    background: #fff;
+    cursor: pointer;
+    font-size: .78rem;
+    transition: background .15s, color .15s;
+}
+
+.btn:hover {
+    background: var(--primary-light);
+    border-color: var(--primary);
+}
+
+.btn.active {
+    background: var(--primary);
+    color: #fff;
+    border-color: var(--primary);
+}
+
+/* ── Footer ──────────────────────────────────────────── */
+footer {
+    text-align: center;
+    padding: 1.2rem;
+    font-size: .78rem;
+    color: var(--muted);
+    margin-top: .5rem;
+}

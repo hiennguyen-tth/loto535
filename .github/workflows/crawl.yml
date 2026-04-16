@@ -1,0 +1,49 @@
+name: Crawl Lotto 5/35
+
+on:
+  schedule:
+    - cron: '30 6 * * *'   # 13:30 VN = 06:30 UTC
+    - cron: '0 15 * * *'   # 22:00 VN = 15:00 UTC
+  workflow_dispatch:        # Chạy thủ công từ GitHub Actions UI
+
+jobs:
+  crawl:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+          cache: 'pip'
+
+      - name: Install dependencies
+        run: pip install -r requirements.txt
+
+      - name: Download existing DB artifact
+        uses: actions/download-artifact@v4
+        continue-on-error: true
+        with:
+          name: lotto535-db
+          path: data/
+
+      - name: Init DB (in case it's the first run)
+        run: python init_db.py
+        env:
+          DB_PATH: data/lotto535.db
+          PYTHONPATH: ${{ github.workspace }}
+
+      - name: Run crawler
+        run: python backend/scheduler_once.py
+        env:
+          DB_PATH: data/lotto535.db
+          PYTHONPATH: ${{ github.workspace }}
+
+      - name: Upload updated DB
+        uses: actions/upload-artifact@v4
+        with:
+          name: lotto535-db
+          path: data/lotto535.db
+          retention-days: 90

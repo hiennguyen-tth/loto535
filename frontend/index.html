@@ -1,0 +1,85 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Lotto 5/35 — Prediction Dashboard</title>
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+  <header>
+    <h1>🎯 Lotto 5/35 Prediction</h1>
+    <span id="last-update">Đang tải...</span>
+  </header>
+
+  <div id="error-banner" class="error-banner hidden">
+    ⚠️ Không kết nối được đến API. Kiểm tra server đang chạy chưa.
+  </div>
+
+  <section class="stats-row" id="stats-row">
+    <div class="stat-card skeleton"></div>
+    <div class="stat-card skeleton"></div>
+    <div class="stat-card skeleton"></div>
+    <div class="stat-card skeleton"></div>
+  </section>
+
+  <section class="card">
+    <h2>📌 Kỳ mới nhất</h2>
+    <div id="latest-result" class="ball-row"></div>
+  </section>
+
+  <section class="card">
+    <h2>🔮 5 Bộ số dự đoán</h2>
+    <div class="toggle-row" style="margin-bottom:12px">
+      <span style="font-size:.8rem;color:var(--muted);align-self:center">Window:</span>
+      <button class="btn active" onclick="setPredWindow(30,this)">30 kỳ</button>
+      <button class="btn" onclick="setPredWindow(50,this)">50 kỳ</button>
+      <button class="btn" onclick="setPredWindow(0,this)">Tất cả</button>
+    </div>
+    <div id="predictions"></div>
+  </section>
+
+  <section class="card two-col">
+    <div>
+      <h2>🔥 Số đang hot <small>(30 kỳ)</small></h2>
+      <div id="hot-nums" class="tag-row"></div>
+    </div>
+    <div>
+      <h2>⏳ Số "nợ" lâu nhất</h2>
+      <div id="gap-nums" class="tag-row"></div>
+    </div>
+  </section>
+
+  <section class="card">
+    <h2>📊 Tần suất từng số</h2>
+    <div class="toggle-row">
+      <button class="btn active" onclick="loadFreq(0, this)">Toàn bộ</button>
+      <button class="btn" onclick="loadFreq(30, this)">30 kỳ</button>
+      <button class="btn" onclick="loadFreq(50, this)">50 kỳ</button>
+    </div>
+    <div id="freq-chart"></div>
+  </section>
+
+  <section class="card">
+    <h2>📋 Lịch sử 20 kỳ gần nhất</h2>
+    <div style="overflow-x:auto">
+      <table id="history-table">
+        <thead>
+          <tr>
+            <th>Kỳ</th><th>Ngày</th><th>Buổi</th>
+            <th>S1</th><th>S2</th><th>S3</th><th>S4</th><th>S5</th>
+            <th>DB</th><th>Tổng</th>
+          </tr>
+        </thead>
+        <tbody id="history-body"></tbody>
+      </table>
+    </div>
+  </section>
+
+  <footer>
+    <p>⚠️ Xổ số là trò chơi may rủi. Tool này chỉ phân tích thống kê, không đảm bảo kết quả.</p>
+  </footer>
+
+  <script src="app.js"></script>
+</body>
+</html>
