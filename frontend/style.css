@@ -442,7 +442,7 @@ button { cursor: pointer; }
 /* ============================
    HISTORY TABLE
    ============================ */
-.table-wrap { border-radius: var(--r-lg); border: 1px solid var(--border); overflow: hidden; overflow-x: auto; }
+.table-wrap { border-radius: var(--r-lg); border: 1px solid var(--border); overflow: clip; overflow-x: auto; }
 .hist-table { width: 100%; border-collapse: collapse; font-size: 0.875rem; }
 .hist-table thead { position: sticky; top: 56px; z-index: 10; }
 .hist-table th {

@@ -10,7 +10,7 @@
 
 | Feature | Chi tiết |
 |---|---|
-| 🕷️ Auto crawl | Crawl vietlott.vn lúc 13:30 & 22:00 hằng ngày |
+| 🕷️ Auto crawl | Crawl vietlott.vn trong cửa sổ 13:30–14h và 21:30–22h hằng ngày (data đôi khi trả về trễ) |
 | 📊 Scoring engine | Composite score: freq_total (40%) + freq_30 (30%) + gap (30%) |
 | 🔮 5 bộ dự đoán | Per-set **Confidence %** + **HOT/GAP/BALANCED/STABLE** tags |
 | 🧠 AI Explain | Giải thích lý do chọn từng bộ số (hot/overdue counts, distribution) |
@@ -37,7 +37,7 @@ loto5-35/
 │   ├── crawler.py          # Crawl vietlott.vn + backup
 │   ├── engine.py           # Scoring + prediction logic
 │   ├── api.py              # FastAPI endpoints
-│   ├── scheduler.py        # Chạy liên tục (13:30 & 22:00)
+│   ├── scheduler.py        # Chạy liên tục (13:30, 14:00, 21:30, 22:00)
 │   └── scheduler_once.py   # Chạy 1 lần (dùng với cron / GH Actions)
 ├── frontend/
 │   ├── index.html          # Dashboard UI
@@ -197,6 +197,7 @@ fly logs
 | GET | `/api/frequency?window=0` | Tần suất từng số |
 | GET | `/api/backtest` | Backtest accuracy |
 | POST | `/api/crawl` | Trigger crawl (cần X-Admin-Key) |
+| POST | `/api/crawl-bulk?n=10` | Crawl nhiều kỳ gần nhất — dùng khi cần fill gap (cần X-Admin-Key) |
 | POST | `/api/recalculate` | Tính lại score (cần X-Admin-Key) |
 | GET | `/health` | Health check |
 | GET | `/docs` | Swagger UI |

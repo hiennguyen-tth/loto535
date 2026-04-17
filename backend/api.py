@@ -221,6 +221,19 @@ def trigger_crawl(_: None = Depends(require_admin)):
     return {"is_new": is_new, "result": result}
 
 
+@app.post("/api/crawl-bulk")
+def trigger_crawl_bulk(n: int = Query(10, ge=1, le=50), _: None = Depends(require_admin)):
+    """Crawl nhiều kỳ gần nhất (yêu cầu X-Admin-Key header). Dùng để fill gap khi thiếu dữ liệu."""
+    try:
+        from crawler import run_crawl_bulk
+    except ImportError:
+        from backend.crawler import run_crawl_bulk
+    saved = run_crawl_bulk(n=n)
+    if saved > 0:
+        recalculate_scores()
+    return {"saved": saved, "requested": n}
+
+
 @app.post("/api/recalculate")
 def trigger_recalculate(_: None = Depends(require_admin)):
     """Tính lại toàn bộ score (yêu cầu X-Admin-Key header)."""
