@@ -1,0 +1,4 @@
+User-agent: *
+Allow: /
+
+Sitemap: https://lotto535.fly.dev/sitemap.xml

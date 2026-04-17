@@ -1,85 +1,331 @@
 <!DOCTYPE html>
-<html lang="vi">
+<html lang="vi" data-theme="dark">
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Lotto 5/35 — Prediction Dashboard</title>
+  <title>LottoAI — AI Lotto 5/35 Prediction Engine</title>
+  <meta name="description" content="Hệ thống AI phân tích Lotto 5/35: tần suất, số nóng, số quá hạn. 5 bộ số dự đoán mỗi kỳ. Cập nhật 13h và 21h hằng ngày.">
+  <meta name="robots" content="index, follow">
+  <link rel="canonical" href="https://lotto535.fly.dev/">
+  <meta property="og:type" content="website">
+  <meta property="og:title" content="LottoAI — AI Lotto Prediction Engine">
+  <meta property="og:description" content="AI phân tích Lotto 5/35 · Confidence Score · HOT + GAP analysis">
+  <meta property="og:url" content="https://lotto535.fly.dev/">
+  <meta property="og:image" content="https://lotto535.fly.dev/og-image.png">
+  <meta property="og:locale" content="vi_VN">
+  <meta name="twitter:card" content="summary_large_image">
+  <script type="application/ld+json">{"@context":"https://schema.org","@type":"WebApplication","name":"LottoAI","url":"https://lotto535.fly.dev/","description":"AI phân tích Lotto 5/35","applicationCategory":"EntertainmentApplication","operatingSystem":"Any","inLanguage":"vi","offers":{"@type":"Offer","price":"0","priceCurrency":"VND"}}</script>
+  <meta name="google-adsense-account" content="ca-pub-2330743593269954">
+  <script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-2330743593269954" crossorigin="anonymous"></script>
+  <link rel="manifest" href="/manifest.json">
+  <meta name="theme-color" content="#6C63FF">
+  <link rel="apple-touch-icon" href="/icon-192.png">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Be+Vietnam+Pro:ital,wght@0,300;0,400;0,500;0,600;0,700;1,400&family=Space+Mono:wght@400;700&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="style.css">
 </head>
 <body>
-  <header>
-    <h1>🎯 Lotto 5/35 Prediction</h1>
-    <span id="last-update">Đang tải...</span>
-  </header>
 
-  <div id="error-banner" class="error-banner hidden">
-    ⚠️ Không kết nối được đến API. Kiểm tra server đang chạy chưa.
+<!-- NAVBAR -->
+<nav class="navbar" id="navbar">
+  <div class="container navbar__inner">
+    <a href="/" class="brand"><span class="brand-pulse"></span>LottoAI<span class="brand-badge">AI</span></a>
+    <ul class="nav-links" id="nav-links">
+      <li><a href="#predictions">Dự đoán</a></li>
+      <li><a href="#analytics">Phân tích</a></li>
+      <li><a href="#history">Lịch sử</a></li>
+      <li><a href="#about">Cách hoạt động</a></li>
+      <li><a href="#saved" id="saved-nav-link" class="nav-saved hidden">☆ Đã lưu (<span id="saved-count">0</span>)</a></li>
+    </ul>
+    <div class="navbar-actions">
+      <button class="icon-btn" id="theme-btn" aria-label="Đổi theme">
+        <svg id="icon-sun" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><circle cx="12" cy="12" r="5"/><line x1="12" y1="1" x2="12" y2="3"/><line x1="12" y1="21" x2="12" y2="23"/><line x1="4.22" y1="4.22" x2="5.64" y2="5.64"/><line x1="18.36" y1="18.36" x2="19.78" y2="19.78"/><line x1="1" y1="12" x2="3" y2="12"/><line x1="21" y1="12" x2="23" y2="12"/><line x1="4.22" y1="19.78" x2="5.64" y2="18.36"/><line x1="18.36" y1="5.64" x2="19.78" y2="4.22"/></svg>
+        <svg id="icon-moon" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24" class="hidden"><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/></svg>
+      </button>
+      <button class="icon-btn hamburger" id="hamburger" aria-label="Menu" aria-expanded="false">
+        <span></span><span></span><span></span>
+      </button>
+    </div>
   </div>
+</nav>
 
-  <section class="stats-row" id="stats-row">
-    <div class="stat-card skeleton"></div>
-    <div class="stat-card skeleton"></div>
-    <div class="stat-card skeleton"></div>
-    <div class="stat-card skeleton"></div>
-  </section>
+<!-- HERO -->
+<section class="hero">
+  <div class="hero-noise"></div>
+  <div class="hero-glow hero-glow--1"></div>
+  <div class="hero-glow hero-glow--2"></div>
+  <div class="container hero__inner">
 
-  <section class="card">
-    <h2>📌 Kỳ mới nhất</h2>
-    <div id="latest-result" class="ball-row"></div>
-  </section>
-
-  <section class="card">
-    <h2>🔮 5 Bộ số dự đoán</h2>
-    <div class="toggle-row" style="margin-bottom:12px">
-      <span style="font-size:.8rem;color:var(--muted);align-self:center">Window:</span>
-      <button class="btn active" onclick="setPredWindow(30,this)">30 kỳ</button>
-      <button class="btn" onclick="setPredWindow(50,this)">50 kỳ</button>
-      <button class="btn" onclick="setPredWindow(0,this)">Tất cả</button>
+    <!-- Left: copy -->
+    <div class="hero__copy">
+      <div class="hero__eyebrow">
+        <span class="live-dot"></span>
+        <span class="live-label">LIVE</span>
+        <span class="eyebrow-sep">|</span>
+        <span id="hero-date">--</span>
+        <span class="eyebrow-sep">·</span>
+        <span id="hero-session">--</span>
+      </div>
+      <h1 class="hero__h1">AI Lotto<br><em>Prediction Engine</em></h1>
+      <p class="hero__desc">Crack patterns from randomness.<br><span id="hero-draws">--</span> kỳ phân tích · cập nhật 2 lần/ngày</p>
+      <div class="hero__actions">
+        <button class="btn btn-primary" id="btn-regen">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="23 4 23 10 17 10"/><polyline points="1 20 1 14 7 14"/><path d="M3.51 9a9 9 0 0 1 14.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0 0 20.49 15"/></svg>
+          <span id="regen-label">Generate New</span>
+        </button>
+        <a href="#analytics" class="btn btn-ghost">View Analysis</a>
+      </div>
+      <!-- Last draw mini display -->
+      <div class="last-draw" id="last-draw">
+        <span class="last-draw__label">Kỳ gần nhất</span>
+        <div class="ball-row" id="hero-balls">
+          <div class="s-ball s-ball--main"></div><div class="s-ball s-ball--main"></div>
+          <div class="s-ball s-ball--main"></div><div class="s-ball s-ball--main"></div>
+          <div class="s-ball s-ball--main"></div>
+          <div class="s-ball s-ball--db"></div>
+        </div>
+      </div>
     </div>
-    <div id="predictions"></div>
-  </section>
 
-  <section class="card two-col">
-    <div>
-      <h2>🔥 Số đang hot <small>(30 kỳ)</small></h2>
-      <div id="hot-nums" class="tag-row"></div>
+    <!-- Right: featured AI card -->
+    <div class="hero__feature">
+      <div class="feat-card" id="feat-card">
+        <div class="feat-card__header">
+          <div class="feat-card__label">#1 AI PICK</div>
+          <div class="feat-card__sub">Kỳ tiếp theo</div>
+        </div>
+        <div class="feat-card__balls ball-row" id="feat-balls">
+          <div class="s-ball s-ball--lg s-ball--main"></div><div class="s-ball s-ball--lg s-ball--main"></div>
+          <div class="s-ball s-ball--lg s-ball--main"></div><div class="s-ball s-ball--lg s-ball--main"></div>
+          <div class="s-ball s-ball--lg s-ball--main"></div>
+          <div class="feat-card__sep">|</div>
+          <div class="s-ball s-ball--lg s-ball--db"></div>
+        </div>
+        <div class="feat-card__conf">
+          <div class="conf-bar"><div class="conf-bar__fill" id="feat-conf-fill" style="width:0%"></div></div>
+          <span class="conf-label" id="feat-conf-label">Confidence: --</span>
+        </div>
+        <div class="feat-card__tags" id="feat-tags"></div>
+        <button class="feat-card__explain-btn" onclick="toggleExplain('feat')">Giải thích AI ▾</button>
+        <div class="explain-panel hidden" id="explain-feat"></div>
+      </div>
     </div>
-    <div>
-      <h2>⏳ Số "nợ" lâu nhất</h2>
-      <div id="gap-nums" class="tag-row"></div>
-    </div>
-  </section>
 
-  <section class="card">
-    <h2>📊 Tần suất từng số</h2>
-    <div class="toggle-row">
-      <button class="btn active" onclick="loadFreq(0, this)">Toàn bộ</button>
-      <button class="btn" onclick="loadFreq(30, this)">30 kỳ</button>
-      <button class="btn" onclick="loadFreq(50, this)">50 kỳ</button>
-    </div>
-    <div id="freq-chart"></div>
-  </section>
+  </div>
+</section>
 
-  <section class="card">
-    <h2>📋 Lịch sử 20 kỳ gần nhất</h2>
-    <div style="overflow-x:auto">
-      <table id="history-table">
+<!-- STATS BAR -->
+<div class="stats-bar">
+  <div class="container stats-bar__inner" id="stats-bar">
+    <div class="stat-pill skeleton-pill"></div>
+    <div class="stat-pill skeleton-pill"></div>
+    <div class="stat-pill skeleton-pill"></div>
+    <div class="stat-pill skeleton-pill"></div>
+  </div>
+</div>
+
+<main>
+
+<!-- PREDICTIONS -->
+<section class="section" id="predictions">
+  <div class="container">
+    <div class="section-head">
+      <div>
+        <h2 class="section-title">Dự đoán kỳ tiếp theo</h2>
+        <p class="section-sub">Scoring: Tần suất (40%) · Gap (30%) · Recent (30%)</p>
+      </div>
+      <div class="section-controls">
+        <div class="tab-row" role="tablist">
+          <button class="tab active" data-window="30" role="tab">30 kỳ</button>
+          <button class="tab" data-window="50" role="tab">50 kỳ</button>
+          <button class="tab" data-window="0" role="tab">Tất cả</button>
+        </div>
+        <button class="btn btn-ghost btn-sm" onclick="doRegenerate()">
+          <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="23 4 23 10 17 10"/><polyline points="1 20 1 14 7 14"/><path d="M3.51 9a9 9 0 0 1 14.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0 0 20.49 15"/></svg>
+          Làm mới
+        </button>
+      </div>
+    </div>
+    <div class="error-box hidden" id="pred-error">
+      <div>⚠️</div>
+      <p>Không thể tải dữ liệu. Kiểm tra kết nối hoặc thử lại.</p>
+      <button class="btn btn-ghost btn-sm" onclick="loadAll()">Thử lại</button>
+    </div>
+    <div class="pred-list" id="pred-list"></div>
+
+    <!-- HOT / GAP -->
+    <div class="hot-gap-grid">
+      <div class="hg-card hg-card--hot">
+        <div class="hg-card__head">
+          <span class="hg-card__icon">🔥</span>
+          <div>
+            <div class="hg-card__title">HOT NUMBERS</div>
+            <div class="hg-card__sub" id="hot-sub">Đang nóng trong 30 kỳ gần nhất</div>
+          </div>
+        </div>
+        <div class="hg-card__balls ball-row" id="hot-balls"></div>
+        <div class="hg-card__trend" id="hot-trend"></div>
+      </div>
+      <div class="hg-card hg-card--gap">
+        <div class="hg-card__head">
+          <span class="hg-card__icon">⏳</span>
+          <div>
+            <div class="hg-card__title">OVERDUE NUMBERS</div>
+            <div class="hg-card__sub" id="gap-sub">Chưa xuất hiện lâu nhất</div>
+          </div>
+        </div>
+        <div class="hg-card__balls ball-row" id="gap-balls"></div>
+        <div class="hg-card__trend" id="gap-trend"></div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- SAVED PICKS -->
+<section class="section section-alt" id="saved">
+  <div class="container">
+    <div class="section-head">
+      <div>
+        <h2 class="section-title">Bộ số đã lưu</h2>
+        <p class="section-sub">Lưu cục bộ trong trình duyệt của bạn</p>
+      </div>
+      <button class="btn btn-ghost btn-sm" onclick="clearSaved()">Xóa tất cả</button>
+    </div>
+    <div class="saved-empty hidden" id="saved-empty">
+      <p>Chưa có bộ số nào được lưu. Nhấn ☆ Save trên các bộ số dự đoán.</p>
+    </div>
+    <div class="pred-list" id="saved-list"></div>
+  </div>
+</section>
+
+<!-- ANALYTICS -->
+<section class="section" id="analytics">
+  <div class="container">
+    <div class="section-head">
+      <div>
+        <h2 class="section-title">Tần suất xuất hiện</h2>
+        <p class="section-sub">Phân tích thống kê số 1–35</p>
+      </div>
+      <div class="tab-row" role="tablist">
+        <button class="tab active" data-freq="0" role="tab">Tất cả</button>
+        <button class="tab" data-freq="30" role="tab">30 kỳ</button>
+        <button class="tab" data-freq="50" role="tab">50 kỳ</button>
+      </div>
+    </div>
+
+    <!-- Distribution insight cards -->
+    <div class="insight-grid" id="insight-grid">
+      <div class="insight-card skeleton-card"></div>
+      <div class="insight-card skeleton-card"></div>
+      <div class="insight-card skeleton-card"></div>
+    </div>
+
+    <div class="freq-chart" id="freq-chart">
+      <div class="skeleton-bar"></div><div class="skeleton-bar" style="width:90%"></div>
+      <div class="skeleton-bar" style="width:95%"></div><div class="skeleton-bar" style="width:80%"></div>
+    </div>
+
+    <!-- Backtest -->
+    <div class="backtest-card" id="backtest-section">
+      <div class="backtest-card__head">
+        <h3>AI PERFORMANCE <span class="backtest-badge">Last 100 rounds</span></h3>
+        <p class="section-sub">Backtest: dự đoán top 10 số, kiểm tra ≥2 số trùng thực tế</p>
+      </div>
+      <div class="backtest-metrics" id="backtest-metrics">
+        <div class="bt-metric skeleton-card" style="height:90px"></div>
+        <div class="bt-metric skeleton-card" style="height:90px"></div>
+        <div class="bt-metric skeleton-card" style="height:90px"></div>
+        <div class="bt-metric skeleton-card" style="height:90px"></div>
+      </div>
+      <p class="backtest-note">Mọi thống kê chỉ dùng bằng data lịch sử. Lotto là ngẫu nhiên hoàn toàn.</p>
+    </div>
+  </div>
+</section>
+
+<!-- HISTORY -->
+<section class="section section-alt" id="history">
+  <div class="container">
+    <div class="section-head">
+      <h2 class="section-title">Lịch sử kỳ quay</h2>
+      <button class="btn btn-ghost btn-sm" id="load-more-btn" onclick="loadMoreHistory()">Tải thêm</button>
+    </div>
+    <div class="table-wrap">
+      <table class="hist-table">
         <thead>
           <tr>
             <th>Kỳ</th><th>Ngày</th><th>Buổi</th>
-            <th>S1</th><th>S2</th><th>S3</th><th>S4</th><th>S5</th>
+            <th>Số 1</th><th>Số 2</th><th>Số 3</th><th>Số 4</th><th>Số 5</th>
             <th>DB</th><th>Tổng</th>
           </tr>
         </thead>
-        <tbody id="history-body"></tbody>
+        <tbody id="hist-body">
+          <tr><td colspan="10" class="empty-cell">Đang tải...</td></tr>
+        </tbody>
       </table>
     </div>
-  </section>
+  </div>
+</section>
 
-  <footer>
-    <p>⚠️ Xổ số là trò chơi may rủi. Tool này chỉ phân tích thống kê, không đảm bảo kết quả.</p>
-  </footer>
+<!-- ABOUT -->
+<section class="section" id="about">
+  <div class="container container-narrow">
+    <h2 class="section-title">Cách hệ thống hoạt động</h2>
+    <div class="about-grid">
+      <div class="about-card">
+        <div class="about-num">01</div>
+        <h3>Tần suất toàn lịch sử <em>40%</em></h3>
+        <p>Đếm số lần xuất hiện của từng số (1–35) trong toàn bộ các kỳ đã quay. Số xuất hiện nhiều hơn được tính điểm cao hơn.</p>
+      </div>
+      <div class="about-card">
+        <div class="about-num">02</div>
+        <h3>Tần suất 30 kỳ gần nhất <em>30%</em></h3>
+        <p>Phát hiện số đang "nóng" trong window ngắn hạn. Xu hướng ngắn hạn có thể khác xu hướng dài hạn.</p>
+      </div>
+      <div class="about-card">
+        <div class="about-num">03</div>
+        <h3>Gap analysis <em>30%</em></h3>
+        <p>Theo dõi số kỳ kể từ lần cuối mỗi số xuất hiện. Số "quá hạn" có xu hướng bù về theo lý thuyết xác suất large numbers.</p>
+      </div>
+    </div>
+    <div class="disclaimer">
+      <strong>⚠️ Lưu ý quan trọng:</strong> Lotto 5/35 là trò chơi xổ số hoàn toàn ngẫu nhiên. Mọi phân tích thống kê chỉ mang tính tham khảo và giải trí. Không có hệ thống nào có thể dự đoán chính xác kết quả. Hãy chơi có trách nhiệm trong giới hạn tài chính của bạn.
+    </div>
+  </div>
+</section>
 
-  <script src="app.js"></script>
+</main>
+
+<!-- FOOTER -->
+<footer class="footer">
+  <div class="container">
+    <div class="footer-grid">
+      <div class="footer-brand">
+        <div class="brand footer-brand__logo"><span class="brand-pulse"></span>LottoAI</div>
+        <p>Hệ thống AI phân tích Lotto 5/35. Dữ liệu từ vietlott.vn. Cập nhật 13h &amp; 21h hằng ngày.</p>
+      </div>
+      <div class="footer-links">
+        <h4>Tính năng</h4>
+        <a href="#predictions">Dự đoán AI</a>
+        <a href="#analytics">Tần suất</a>
+        <a href="#history">Lịch sử</a>
+        <a href="#saved">Bộ số đã lưu</a>
+      </div>
+      <div class="footer-links">
+        <h4>Thông tin</h4>
+        <a href="#about">Cách hoạt động</a>
+        <a href="https://vietlott.vn" target="_blank" rel="noopener noreferrer">Vietlott chính thức</a>
+      </div>
+    </div>
+    <div class="footer-bottom">
+      <span>© 2026 LottoAI</span>
+      <span>Không đảm bảo kết quả · Chơi có trách nhiệm</span>
+    </div>
+  </div>
+</footer>
+
+<div class="toast-container" id="toast-container" aria-live="polite"></div>
+<button class="btn-top hidden" id="btn-top" aria-label="Lên đầu" onclick="scrollTo({top:0,behavior:'smooth'})">↑</button>
+<script src="app.js"></script>
 </body>
 </html>

@@ -1,8 +1,8 @@
-# 🎯 Lotto 5/35 — Prediction Dashboard
+# LottoAI — AI Lotto 5/35 Prediction Engine
 
-> Hệ thống phân tích & dự đoán Vietlott Lotto 5/35: crawl dữ liệu tự động, scoring engine thống kê, và dashboard web.
+> **Live:** [https://lotto535.fly.dev](https://lotto535.fly.dev)
 
-> ⚠️ **Lưu ý**: Xổ số là trò chơi may rủi. Mỗi kỳ quay là độc lập, không phụ thuộc lịch sử. Tool này chỉ phân tích thống kê để vui chơi, không phải công cụ đầu tư.
+> ⚠️ Xổ số là trò chơi may rủi. Mỗi kỳ quay hoàn toàn độc lập. Tool này chỉ phân tích thống kê để vui chơi, không phải công cụ đầu tư.
 
 ---
 
@@ -12,12 +12,18 @@
 |---|---|
 | 🕷️ Auto crawl | Crawl vietlott.vn lúc 13:30 & 22:00 hằng ngày |
 | 📊 Scoring engine | Composite score: freq_total (40%) + freq_30 (30%) + gap (30%) |
-| 🔮 5 bộ dự đoán | Top composite, Composite+Gap, Lịch sử+Hot, 2× Weighted random |
-| 📈 Frequency chart | Tần suất toàn bộ / 30 kỳ / 50 kỳ |
-| 🔥 Hot & Gap tracker | Số đang hot và số "nợ" lâu nhất |
-| 🧪 Backtest | Đánh giá độ chính xác mô hình trên dữ liệu lịch sử |
-| 🌐 REST API | FastAPI với Swagger docs tại `/docs` |
-| 🚀 Fly.io ready | Dockerfile + fly.toml có sẵn |
+| 🔮 5 bộ dự đoán | Per-set **Confidence %** + **HOT/GAP/BALANCED/STABLE** tags |
+| 🧠 AI Explain | Giải thích lý do chọn từng bộ số (hot/overdue counts, distribution) |
+| ↺ Regenerate | Animation "Analyzing → Generating" với API call |
+| ☆ Save Picks | Lưu bộ số vào localStorage, xem lại bất cứ lúc nào |
+| 📈 Frequency chart | Animated bars, HOT/LOW badges, 3 insight cards trên mỗi window |
+| 🔥 Hot & Gap tracker | Trend indicator: avg hot rate + avg gap rounds |
+| 🧪 Backtest | 4 metrics: accuracy %, avg hits, hit3 %, total tested |
+| 🌐 REST API | FastAPI · Swagger docs `/docs` |
+| 🎨 Dark/Light UI | Dark-first design, Space Mono cho số, Be Vietnam Pro cho text |
+| 📱 PWA | manifest.json, theme-color, apple-touch-icon |
+| 🔍 SEO | Meta tags, OG, JSON-LD, sitemap.xml, robots.txt, AdSense |
+| 🚀 Fly.io deploy | Docker + persistent SQLite volume |
 
 ---
 
@@ -194,6 +200,30 @@ fly logs
 | POST | `/api/recalculate` | Tính lại score (cần X-Admin-Key) |
 | GET | `/health` | Health check |
 | GET | `/docs` | Swagger UI |
+
+---
+
+## ⚡ Performance
+
+| Metric | Value |
+|--------|-------|
+| External fonts | **None** — system font stack (`system-ui, -apple-system, "Segoe UI"`) |
+| JS framework | **None** — vanilla JS (~7 KB) |
+| CSS framework | **None** — custom CSS design tokens (~5 KB) |
+| API calls | Parallel via `Promise.all` — 4 endpoints in one round-trip |
+| AdSense | `async` attribute — non-blocking page render |
+| Static files | Served via FastAPI `FileResponse` — no extra server layer |
+| Time to first byte | ~50 ms (Fly.io SIN region) |
+| DB | SQLite on persistent Fly volume — zero external DB latency |
+
+### Optimizations applied
+- **Sticky navbar** with `backdrop-filter: blur` — CSS only, no JS
+- `<link rel="preload" href="style.css" as="style">` — early asset discovery
+- `<script src="app.js" defer>` — parse HTML before executing JS
+- All render functions update DOM in one `innerHTML` assignment per element
+- Frequency bars: CSS `width` via inline style, no Canvas/SVG
+- History table: 4-col (no redundant columns)
+- No animation libraries — only CSS `@keyframes shimmer` for skeleton loading
 
 ---
 

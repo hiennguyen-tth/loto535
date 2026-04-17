@@ -10,40 +10,26 @@ jobs:
   crawl:
     runs-on: ubuntu-latest
     steps:
-      - name: Checkout code
-        uses: actions/checkout@v4
+      - name: Trigger crawl on production
+        run: |
+          echo "Triggering crawl on lotto535.fly.dev..."
+          RESPONSE=$(curl -s -w "\n%{http_code}" -X POST https://lotto535.fly.dev/api/crawl \
+            -H "X-Admin-Key: ${{ secrets.FLY_ADMIN_KEY }}" \
+            -H "Content-Type: application/json" \
+            --max-time 60)
+          HTTP_CODE=$(echo "$RESPONSE" | tail -1)
+          BODY=$(echo "$RESPONSE" | head -1)
+          echo "Response: $BODY"
+          echo "HTTP code: $HTTP_CODE"
+          if [ "$HTTP_CODE" -ne 200 ]; then
+            echo "Crawl trigger failed with HTTP $HTTP_CODE"
+            exit 1
+          fi
 
-      - name: Set up Python
-        uses: actions/setup-python@v5
-        with:
-          python-version: '3.11'
-          cache: 'pip'
+      - name: Trigger score recalculate
+        run: |
+          curl -s -X POST https://lotto535.fly.dev/api/recalculate \
+            -H "X-Admin-Key: ${{ secrets.FLY_ADMIN_KEY }}" \
+            --max-time 30
+          echo "Recalculate triggered."
 
-      - name: Install dependencies
-        run: pip install -r requirements.txt
-
-      - name: Download existing DB artifact
-        uses: actions/download-artifact@v4
-        continue-on-error: true
-        with:
-          name: lotto535-db
-          path: data/
-
-      - name: Init DB (in case it's the first run)
-        run: python init_db.py
-        env:
-          DB_PATH: data/lotto535.db
-          PYTHONPATH: ${{ github.workspace }}
-
-      - name: Run crawler
-        run: python backend/scheduler_once.py
-        env:
-          DB_PATH: data/lotto535.db
-          PYTHONPATH: ${{ github.workspace }}
-
-      - name: Upload updated DB
-        uses: actions/upload-artifact@v4
-        with:
-          name: lotto535-db
-          path: data/lotto535.db
-          retention-days: 90

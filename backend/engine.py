@@ -178,6 +178,25 @@ def _weighted_pick(pool: list[int], scores_map: dict[int, float],
     return sorted(random.sample(pool, k))
 
 
+def _confidence(nums: list[int], scores_map: dict) -> int:
+    """Mean score of the set's numbers, rounded to int (0-100)."""
+    s = [scores_map.get(n, 0) for n in nums]
+    return round(sum(s) / len(s)) if s else 0
+
+
+def _tags(nums: list[int], hot_set: set, gap_set: set, top15_set: set) -> list[str]:
+    """Return descriptive tags for a set of numbers."""
+    tags = []
+    hot_count = sum(1 for n in nums if n in hot_set)
+    gap_count = sum(1 for n in nums if n in gap_set)
+    evens     = sum(1 for n in nums if n % 2 == 0)
+    if hot_count >= 2: tags.append("HOT")
+    if gap_count >= 1: tags.append("GAP")
+    if 2 <= evens <= 3: tags.append("BALANCED")
+    if all(n in top15_set for n in nums): tags.append("STABLE")
+    return tags[:3] if tags else ["STABLE"]
+
+
 def generate_sets(
     num_scores: list[dict],
     db_scores: list[dict],
@@ -195,9 +214,12 @@ def generate_sets(
     """
     scores_map = {r["so"]: r["score"] for r in num_scores}
 
-    top15   = [r["so"] for r in num_scores[:15]]
-    top5    = [r["so"] for r in num_scores[:5]]
-    top_gap = sorted(num_scores, key=lambda x: x["gap"], reverse=True)
+    top15     = [r["so"] for r in num_scores[:15]]
+    top5      = [r["so"] for r in num_scores[:5]]
+    top_gap   = sorted(num_scores, key=lambda x: x["gap"], reverse=True)
+    hot_set   = {r["so"] for r in sorted(num_scores, key=lambda x: x["freq_30"], reverse=True)[:7]}
+    gap_set   = {r["so"] for r in top_gap[:7]}
+    top15_set = set(top15)
     top_ft  = sorted(num_scores, key=lambda x: x["freq_total"], reverse=True)
     top_hot = sorted(num_scores, key=lambda x: x["freq_30"], reverse=True)
 
@@ -237,12 +259,19 @@ def generate_sets(
     bo4 = _weighted_pick(top15, scores_map)
     bo5 = _weighted_pick(top15, scores_map)
 
+    def _mk(name, nums, db):
+        return {
+            "ten": name, "nums": nums, "db": db,
+            "confidence": _confidence(nums, scores_map),
+            "tags": _tags(nums, hot_set, gap_set, top15_set),
+        }
+
     return [
-        {"ten": "Bộ 1 — Top composite",        "nums": bo1, "db": db0},
-        {"ten": "Bộ 2 — Composite + Gap",       "nums": bo2, "db": db1},
-        {"ten": "Bộ 3 — Lịch sử + Đang hot",   "nums": bo3, "db": db2},
-        {"ten": "Bộ 4 — Weighted random",       "nums": bo4, "db": db0},
-        {"ten": "Bộ 5 — Weighted random (alt)", "nums": bo5, "db": db1},
+        _mk("Bộ 1 — Top composite",        bo1, db0),
+        _mk("Bộ 2 — Composite + Gap",       bo2, db1),
+        _mk("Bộ 3 — Lịch sử + Đang hot",   bo3, db2),
+        _mk("Bộ 4 — Weighted random",       bo4, db0),
+        _mk("Bộ 5 — Weighted random (alt)", bo5, db1),
     ]
 
 
@@ -288,27 +317,39 @@ def backtest(draws: list[tuple], lookback: int = 50, predict_n: int = 100) -> di
     """
     Đánh giá mô hình trên {predict_n} kỳ cuối.
     Metrics:
-        hit2_top5  — tỷ lệ top-5 có ≥2 số trúng
-        hit3_top10 — tỷ lệ top-10 có ≥3 số trúng
+        accuracy_pct — tỷ lệ top-5 có ≥2 số trúng
+        hit3_pct     — tỷ lệ top-10 có ≥3 số trúng
+        avg_hits     — trung bình số trùng trong top-10
     """
     total = min(predict_n, len(draws) - lookback)
     if total <= 0:
-        return {"error": "Not enough draws for backtest"}
+        return {"error": "Not enough draws for backtest",
+                "total_tested": 0, "accuracy_pct": 0, "avg_hits": 0}
 
-    hit2, hit3 = 0, 0
+    hit2, hit3, total_hits, best_streak, cur_streak = 0, 0, 0, 0, 0
     for i in range(len(draws) - total, len(draws)):
         history = draws[max(0, i - lookback):i]
         actual  = set(draws[i][:5])
         sc      = score_numbers(history)
         top5    = {r["so"] for r in sc[:5]}
         top10   = {r["so"] for r in sc[:10]}
+        hits    = len(actual & top10)
+        total_hits += hits
         if len(actual & top5) >= 2:
             hit2 += 1
-        if len(actual & top10) >= 3:
+            cur_streak += 1
+            best_streak = max(best_streak, cur_streak)
+        else:
+            cur_streak = 0
+        if hits >= 3:
             hit3 += 1
 
     return {
         "total_tested":  total,
+        "accuracy_pct":  round(hit2 / total * 100, 1),
+        "hit3_pct":      round(hit3 / total * 100, 1),
+        "avg_hits":      round(total_hits / total, 2),
+        "best_streak":   best_streak,
         "hit2_in_top5":  f"{hit2 / total * 100:.1f}%",
         "hit3_in_top10": f"{hit3 / total * 100:.1f}%",
     }

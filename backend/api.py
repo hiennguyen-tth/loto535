@@ -68,15 +68,24 @@ app.add_middleware(
 )
 
 # ---------------------------------------------------------------------------
-# Serve frontend if it exists (production mode)
+# Frontend helpers — explicit routes for SEO/PWA files before SPA catch-all
 # ---------------------------------------------------------------------------
 FRONTEND_DIR = os.path.join(os.path.dirname(__file__), "..", "frontend")
-if os.path.isdir(FRONTEND_DIR):
-    app.mount("/static", StaticFiles(directory=FRONTEND_DIR), name="static")
 
-    @app.get("/", include_in_schema=False)
-    async def root():
-        return FileResponse(os.path.join(FRONTEND_DIR, "index.html"))
+def _fe(name: str):
+    return FileResponse(os.path.join(FRONTEND_DIR, name))
+
+@app.get("/robots.txt", include_in_schema=False)
+async def robots(): return _fe("robots.txt")
+
+@app.get("/sitemap.xml", include_in_schema=False)
+async def sitemap(): return _fe("sitemap.xml")
+
+@app.get("/ads.txt", include_in_schema=False)
+async def ads_txt(): return _fe("ads.txt")
+
+@app.get("/google21779641c6e2dbb4.html", include_in_schema=False)
+async def google_verify(): return _fe("google21779641c6e2dbb4.html")
 
 
 # ---------------------------------------------------------------------------
@@ -113,7 +122,7 @@ def get_latest(n: int = Query(20, ge=1, le=500)):
 
 
 @app.get("/api/predictions")
-def get_predictions(window: int = Query(30, ge=10, le=200)):
+def get_predictions(window: int = Query(30, ge=0, le=500)):
     """Trả về 5 bộ số dự đoán cho kỳ tiếp theo."""
     draws   = load_results()
     num_sc  = score_numbers(draws, window=window)
@@ -202,7 +211,10 @@ def get_backtest(lookback: int = Query(50, ge=20, le=200),
 @app.post("/api/crawl")
 def trigger_crawl(_: None = Depends(require_admin)):
     """Trigger crawl thủ công (yêu cầu X-Admin-Key header)."""
-    from crawler import run_crawl
+    try:
+        from crawler import run_crawl
+    except ImportError:
+        from backend.crawler import run_crawl
     is_new, result = run_crawl()
     if is_new:
         recalculate_scores()
@@ -223,3 +235,10 @@ def trigger_recalculate(_: None = Depends(require_admin)):
 @app.get("/health")
 def health():
     return {"status": "ok", "db": DB_PATH}
+
+
+# ---------------------------------------------------------------------------
+# SPA catch-all — MUST be last; serves index.html for any unmatched route
+# ---------------------------------------------------------------------------
+if os.path.isdir(FRONTEND_DIR):
+    app.mount("/", StaticFiles(directory=FRONTEND_DIR, html=True), name="frontend")

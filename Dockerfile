@@ -15,7 +15,7 @@ RUN pip install --no-cache-dir -r requirements.txt
 # Copy source
 COPY backend/ ./backend/
 COPY frontend/ ./frontend/
-COPY init_db.py seed_sample.py import_excel.py ./
+COPY init_db.py seed_sample.py import_excel.py startup.py ./
 
 # Create data dir (will be overridden by Fly volume mount)
 RUN mkdir -p data
@@ -29,5 +29,5 @@ ENV PYTHONPATH=/app
 
 EXPOSE 8080
 
-# Init DB then start API on port 8080 (Fly default)
-CMD ["sh", "-c", "python init_db.py && uvicorn backend.api:app --host 0.0.0.0 --port 8080"]
+# Init DB (auto-seed if empty), then start API
+CMD ["sh", "-c", "python startup.py && uvicorn backend.api:app --host 0.0.0.0 --port 8080"]
