@@ -51,7 +51,8 @@
         <li><a href="#about">Cách hoạt động</a></li>
         <li><a href="#saved" id="saved-nav-link" class="nav-saved hidden">☆ Đã lưu (<span id="saved-count">0</span>)</a>
         </li>
-        <li><a href="https://xs-bingo18.fly.dev" target="_blank" rel="noopener noreferrer" class="nav-bingo">🎱 Bingo</a></li>
+        <li><a href="https://xs-bingo18.fly.dev" target="_blank" rel="noopener noreferrer" class="nav-bingo">🎱
+            Bingo</a></li>
       </ul>
       <div class="navbar-actions">
         <button class="icon-btn" id="theme-btn" aria-label="Đổi theme">
@@ -125,6 +126,15 @@
               <path d="M3.51 9a9 9 0 0 1 14.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0 0 20.49 15" />
             </svg>
             <span id="regen-label">🎲 Generate New</span>
+          </button>
+          <button class="btn btn-ghost" id="btn-crawl" onclick="doCrawl()"
+            title="Crawl kết quả mới nhất từ vietlott.vn">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
+              <polyline points="23 4 23 10 17 10" />
+              <polyline points="1 20 1 14 7 14" />
+              <path d="M3.51 9a9 9 0 0 1 14.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0 0 20.49 15" />
+            </svg>
+            Cập nhật kết quả
           </button>
           <a href="#analytics" class="btn btn-ghost">View Analysis</a>
         </div>
@@ -312,7 +322,10 @@
       <div class="container">
         <div class="section-head">
           <h2 class="section-title">Lịch sử kỳ quay</h2>
-          <button class="btn btn-ghost btn-sm" id="load-more-btn" onclick="loadMoreHistory()">Tải thêm</button>
+          <div style="display:flex;gap:8px;align-items:center;">
+            <button class="btn btn-ghost btn-sm" onclick="doCrawl()">⬇ Cập nhật</button>
+            <button class="btn btn-ghost btn-sm" id="load-more-btn" onclick="loadMoreHistory()">Tải thêm</button>
+          </div>
         </div>
         <div class="table-wrap">
           <table class="hist-table">

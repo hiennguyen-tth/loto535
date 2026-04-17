@@ -1,13 +1,10 @@
 """
-crawler.py — Crawl kết quả Lotto 5/35, Mega 6/45, Power 6/55 từ vietlott.vn
+crawler.py — Crawl kết quả Lotto 5/35, Mega 6/45, Power 6/55
 
-Chiến lược 5/35:
-  1. Thử vietlott.vn (official) → parse HTML table
-  2. Fallback sang ketquadientoan.com nếu lỗi / không có dữ liệu
-
-Chiến lược 6/45, 6/55:
-  Crawl từ trang winning-number-645 / winning-number-655 (plain table)
-  với fallback sang trang latest (/645, /655)
+Chiến lược crawl (theo thứ tự ưu tiên):
+  5/35 : vietlott.vn history → vietlott.vn detail → ketquadientoan.com
+  6/45 : vietlott.vn history → vietlott.vn detail → xoso.net.vn
+  6/55 : vietlott.vn history → vietlott.vn detail → xoso.net.vn
 """
 import re
 import time
@@ -36,6 +33,10 @@ VIETLOTT_645_HISTORY_URL = "https://vietlott.vn/vi/trung-thuong/ket-qua-trung-th
 # Power 6/55 URLs
 VIETLOTT_655_URL         = "https://vietlott.vn/vi/trung-thuong/ket-qua-trung-thuong/655"
 VIETLOTT_655_HISTORY_URL = "https://vietlott.vn/vi/trung-thuong/ket-qua-trung-thuong/winning-number-655"
+
+# Fallback: xoso.net.vn (accessible from Vietnam and most CDN IPs)
+XOSO_645_URL = "https://xoso.net.vn/xo-so-tu-chon-mega-645.html"
+XOSO_655_URL = "https://xoso.net.vn/xo-so-power-655.html"
 
 SESSION = requests.Session()
 SESSION.headers.update({
@@ -479,33 +480,153 @@ def _parse_latest_645(soup) -> list[dict]:
                  tong=s1 + s2 + s3 + s4 + s5 + s6)]
 
 
+def _parse_xosonet(soup, game: str, n: int = 20) -> list[dict]:
+    """
+    Parse xoso.net.vn HTML có cấu trúc cho 6/45 hoặc 6/55.
+
+    Cấu trúc mỗi kỳ (div.boxs_content):
+      div.cat-box-title > h2.title-cat > a[href~=ngay-DD-M-YYYY]
+      div.cat-box-content
+        div.mega-jackpot > div.rows_kyquay > span.mega-jackpot-title > strong (#NNNNN)
+        div.mega-rows    > span.icon_xsmga  (số bóng; class bgyelow = power ball với 655)
+    """
+    results: list[dict] = []
+    seen: set[int] = set()
+
+    for section in soup.find_all("div", class_="boxs_content"):
+        if len(results) >= n:
+            break
+
+        # --- Kỳ số ---
+        ky_div = section.find("div", class_="rows_kyquay")
+        if not ky_div:
+            continue
+        strong = ky_div.find("strong")
+        if not strong:
+            continue
+        ky_text = strong.get_text(strip=True).lstrip("#")
+        if not ky_text.isdigit():
+            continue
+        ky = int(ky_text)
+        if ky in seen:
+            continue
+
+        # --- Số bóng ---
+        mega_rows = section.find("div", class_="mega-rows")
+        if not mega_rows:
+            continue
+        balls = mega_rows.find_all("span", class_="icon_xsmga")
+        if not balls:
+            continue
+
+        # --- Ngày ---
+        title_div = section.find("div", class_="cat-box-title")
+        if not title_div:
+            continue
+        date_href = None
+        for a in title_div.find_all("a", href=True):
+            if "ngay-" in a["href"]:
+                date_href = a["href"]
+                break
+        if not date_href:
+            continue
+        dm = re.search(r"ngay-(\d+)-(\d+)-(\d{4})", date_href)
+        if not dm:
+            continue
+        try:
+            ngay = datetime(int(dm.group(3)), int(dm.group(2)), int(dm.group(1))).date()
+        except ValueError:
+            continue
+
+        # --- Build result ---
+        if game == "645":
+            if len(balls) != 6:
+                continue
+            nums = sorted(int(b.get_text(strip=True)) for b in balls)
+            if not all(1 <= v <= 45 for v in nums):
+                continue
+            s1, s2, s3, s4, s5, s6 = nums
+            seen.add(ky)
+            results.append(dict(
+                ky=ky, ngay=str(ngay),
+                s1=s1, s2=s2, s3=s3, s4=s4, s5=s5, s6=s6,
+                tong=sum(nums),
+            ))
+        else:  # 655: bóng có class bgyelow là power ball
+            if len(balls) != 7:
+                continue
+            power_ball = None
+            main_balls = []
+            for b in balls:
+                cls = b.get("class", [])
+                if "bgyelow" in cls:
+                    power_ball = int(b.get_text(strip=True))
+                else:
+                    main_balls.append(int(b.get_text(strip=True)))
+            if power_ball is None or len(main_balls) != 6:
+                continue
+            main = sorted(main_balls)
+            if not all(1 <= v <= 55 for v in main) or not (1 <= power_ball <= 55):
+                continue
+            s1, s2, s3, s4, s5, s6 = main
+            seen.add(ky)
+            results.append(dict(
+                ky=ky, ngay=str(ngay),
+                s1=s1, s2=s2, s3=s3, s4=s4, s5=s5, s6=s6,
+                power=power_ball,
+                tong=sum(main),
+            ))
+
+    return results
+
+
+def _fetch_xosonet(url: str, game: str, n: int = 20) -> list[dict]:
+    """Fetch và parse trang xoso.net.vn cho game 645 hoặc 655."""
+    try:
+        res = SESSION.get(url, timeout=TIMEOUT)
+        res.raise_for_status()
+        soup = BeautifulSoup(res.text, "html.parser")
+        results = _parse_xosonet(soup, game, n)
+        if results:
+            print(f"[crawler:{game}] xoso.net.vn: lấy được {len(results)} kỳ")
+        return results
+    except Exception as e:
+        print(f"[crawler:{game}] xoso.net.vn error: {e}")
+        return []
+
+
 def fetch_history_645(n: int = 20) -> list[dict]:
-    """Crawl lịch sử Mega 6/45 từ winning-number-645."""
+    """Crawl lịch sử Mega 6/45. Thử vietlott trước, fallback xoso.net.vn."""
     try:
         res = SESSION.get(VIETLOTT_645_HISTORY_URL, timeout=TIMEOUT)
         res.raise_for_status()
         soup = BeautifulSoup(res.text, "html.parser")
-        results = _parse_winning_table_645(soup)
-        return results[:n]
+        results = _parse_winning_table_645(soup)[:n]
+        if results:
+            return results
     except Exception as e:
-        print(f"[crawler:645] history error: {e}")
-        return []
+        print(f"[crawler:645] vietlott history error: {e}")
+    print("[crawler:645] Vietlott không khả dụng, thử xoso.net.vn...")
+    return _fetch_xosonet(XOSO_645_URL, game="645", n=n)
 
 
 def fetch_latest_645() -> list[dict]:
-    """Crawl kỳ mới nhất Mega 6/45."""
-    # Try history page first (more reliable)
+    """
+    Crawl kỳ mới nhất Mega 6/45.
+    Thứ tự: vietlott history → vietlott detail → xoso.net.vn (qua fetch_history_645).
+    """
+    # fetch_history_645 đã tích hợp fallback xoso.net.vn
     results = fetch_history_645(n=1)
     if results:
         return results
-    # Fallback to detail page
+    # Last-resort: vietlott detail page
     try:
         res = SESSION.get(VIETLOTT_645_URL, timeout=TIMEOUT)
         res.raise_for_status()
         soup = BeautifulSoup(res.text, "html.parser")
         return _parse_latest_645(soup)
     except Exception as e:
-        print(f"[crawler:645] latest error: {e}")
+        print(f"[crawler:645] vietlott detail error: {e}")
         return []
 
 
@@ -680,30 +801,37 @@ def _parse_latest_655(soup) -> list[dict]:
 
 
 def fetch_history_655(n: int = 20) -> list[dict]:
-    """Crawl lịch sử Power 6/55 từ winning-number-655."""
+    """Crawl lịch sử Power 6/55. Thử vietlott trước, fallback xoso.net.vn."""
     try:
         res = SESSION.get(VIETLOTT_655_HISTORY_URL, timeout=TIMEOUT)
         res.raise_for_status()
         soup = BeautifulSoup(res.text, "html.parser")
-        results = _parse_winning_table_655(soup)
-        return results[:n]
+        results = _parse_winning_table_655(soup)[:n]
+        if results:
+            return results
     except Exception as e:
-        print(f"[crawler:655] history error: {e}")
-        return []
+        print(f"[crawler:655] vietlott history error: {e}")
+    print("[crawler:655] Vietlott không khả dụng, thử xoso.net.vn...")
+    return _fetch_xosonet(XOSO_655_URL, game="655", n=n)
 
 
 def fetch_latest_655() -> list[dict]:
-    """Crawl kỳ mới nhất Power 6/55."""
+    """
+    Crawl kỳ mới nhất Power 6/55.
+    Thứ tự: vietlott history → vietlott detail → xoso.net.vn (qua fetch_history_655).
+    """
+    # fetch_history_655 đã tích hợp fallback xoso.net.vn
     results = fetch_history_655(n=1)
     if results:
         return results
+    # Last-resort: vietlott detail page
     try:
         res = SESSION.get(VIETLOTT_655_URL, timeout=TIMEOUT)
         res.raise_for_status()
         soup = BeautifulSoup(res.text, "html.parser")
         return _parse_latest_655(soup)
     except Exception as e:
-        print(f"[crawler:655] latest error: {e}")
+        print(f"[crawler:655] vietlott detail error: {e}")
         return []
 
 
@@ -757,9 +885,14 @@ def run_crawl_bulk_655(n: int = 10, db_path: str = DB_PATH) -> int:
 
 
 if __name__ == "__main__":
-    is_new, result = run_crawl()
-    print(f"[535] is_new={is_new}, result={result}")
-    is_new_645, result_645 = run_crawl_645()
-    print(f"[645] is_new={is_new_645}, result={result_645}")
-    is_new_655, result_655 = run_crawl_655()
-    print(f"[655] is_new={is_new_655}, result={result_655}")
+    import sys
+    args = sys.argv[1:]
+    if not args or "535" in args:
+        is_new, result = run_crawl()
+        print(f"[535] is_new={is_new}, result={result}")
+    if not args or "645" in args:
+        is_new_645, result_645 = run_crawl_645()
+        print(f"[645] is_new={is_new_645}, result={result_645}")
+    if not args or "655" in args:
+        is_new_655, result_655 = run_crawl_655()
+        print(f"[655] is_new={is_new_655}, result={result_655}")

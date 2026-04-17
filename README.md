@@ -11,12 +11,25 @@ Hỗ trợ 3 sản phẩm Vietlott:
 
 ---
 
+## ⏰ Lịch Crawl Tự Động
+
+| Game | Ngày quay | Giờ quay | Crawl lúc |
+|---|---|---|---|
+| **Lotto 5/35** | Hằng ngày | 13H & 21H | 13:30, 14:00, 21:30, 22:00 |
+| **Mega 6/45** | T4 · T6 · CN | 18H | 18:30, 19:00 |
+| **Power 6/55** | T3 · T5 · T7 | 18H | 18:30, 19:00 |
+
+> ⚠️ **Lưu ý fly.io:** Khi app bị suspend (không có traffic), scheduler background sẽ tắt. Nếu kết quả chưa cập nhật, dùng nút **"Cập nhật kết quả"** hoặc **"⬇ Cập nhật"** trên trang web để crawl thủ công.
+
+---
+
 ## ✨ Tính năng
 
 | Feature | Chi tiết |
 |---|---|
 | 🎮 Multi-game | Hỗ trợ Lotto 5/35, Mega 6/45, Power 6/55 — chuyển tab tức thì |
 | 🕷️ Auto crawl | Crawl vietlott.vn tự động theo lịch mỗi game |
+| 🔄 Manual crawl | Nút **"Cập nhật kết quả"** trên UI — crawl ngay khi click |
 | 📊 Scoring engine | Composite score: freq_total (40%) + freq_30 (30%) + gap (30%) |
 | 🔮 5 bộ dự đoán | Per-set **Confidence %** + **HOT/GAP/BALANCED/STABLE** tags |
 | 🧠 AI Explain | Giải thích lý do chọn từng bộ số (hot/overdue counts, distribution) |
@@ -165,7 +178,7 @@ Tất cả GET endpoint nhận `?game=535` (default) | `645` | `655`.
 | GET | `/api/stats?game=535` | Thống kê tổng hợp |
 | GET | `/api/frequency?game=535&window=30` | Tần suất từng số |
 | GET | `/api/backtest?game=535` | Backtest accuracy |
-| POST | `/api/crawl?game=535` | Trigger crawl (X-Admin-Key) |
+| POST | `/api/crawl?game=535` | Trigger crawl (không cần key nếu ADMIN_KEY trống) |
 | POST | `/api/crawl-bulk?game=535&n=10` | Crawl nhiều kỳ (X-Admin-Key) |
 | POST | `/api/recalculate?game=535` | Tính lại score (X-Admin-Key) |
 

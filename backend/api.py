@@ -241,8 +241,8 @@ def get_backtest(game: str = Query("535"),
 
 
 @app.post("/api/crawl")
-def trigger_crawl(game: str = Query("535"), _: None = Depends(require_admin)):
-    """Trigger crawl thủ công (yêu cầu X-Admin-Key header)."""
+def trigger_crawl(game: str = Query("535")):
+    """Trigger crawl thủ công — không cần auth. Crawl kỳ mới nhất và tính lại score nếu có data mới."""
     _validate_game(game)
     try:
         from crawler import run_crawl, run_crawl_645, run_crawl_655

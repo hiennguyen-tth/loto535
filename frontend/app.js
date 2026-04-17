@@ -81,7 +81,7 @@ function sleep(ms) { return new Promise(r => setTimeout(r, ms)); }
 
 // ─── GAME HELPERS ────────────────────────────────────
 function gameParam() { return '?game=' + state.game; }
-function gameCfg()   { return GAMES[state.game]; }
+function gameCfg() { return GAMES[state.game]; }
 
 function switchGame(g) {
   if (!GAMES[g] || g === state.game) return;
@@ -90,7 +90,7 @@ function switchGame(g) {
   state.latest = [];
   state.histPage = 1;
 
-  document.querySelectorAll('.game-tab').forEach(function(b) {
+  document.querySelectorAll('.game-tab').forEach(function (b) {
     b.classList.toggle('active', b.dataset.game === g);
     b.setAttribute('aria-selected', b.dataset.game === g ? 'true' : 'false');
   });
@@ -141,8 +141,8 @@ function init() {
 }
 
 function initGameTabs() {
-  document.querySelectorAll('.game-tab').forEach(function(btn) {
-    btn.addEventListener('click', function() { switchGame(this.dataset.game); });
+  document.querySelectorAll('.game-tab').forEach(function (btn) {
+    btn.addEventListener('click', function () { switchGame(this.dataset.game); });
   });
   var heroTitle = document.getElementById('hero-game-title');
   if (heroTitle) heroTitle.textContent = GAMES['535'].label;
@@ -188,7 +188,7 @@ async function doRegenerate() {
   showPredSkeleton();
   let phase = 0;
   if (state.regenTimer) clearInterval(state.regenTimer);
-  state.regenTimer = setInterval(function() {
+  state.regenTimer = setInterval(function () {
     if (lblEl) lblEl.textContent = REGEN_MSGS[phase % REGEN_MSGS.length];
     phase++;
   }, 700);
@@ -235,13 +235,42 @@ async function loadMoreHistory() {
   } catch (e) { showToast('Không tải thêm được.', 'error'); }
 }
 
+// ─── MANUAL CRAWL ─────────────────────────────────────
+async function doCrawl() {
+  var btn = document.getElementById('btn-crawl');
+  if (!btn || btn.disabled) return;
+  btn.disabled = true;
+  var origHtml = btn.innerHTML;
+  btn.innerHTML = '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" style="animation:spin 1s linear infinite"><path d="M21 12a9 9 0 1 1-6.219-8.56"/></svg> Đang crawl...';
+  try {
+    var res = await fetch(API + '/api/crawl' + gameParam(), {
+      method: 'POST',
+      signal: AbortSignal.timeout(30000),
+    });
+    if (!res.ok) throw new Error('HTTP ' + res.status);
+    var data = await res.json();
+    if (data.is_new && data.result) {
+      showToast('✅ Đã cập nhật kỳ #' + data.result.ky + ' (' + GAMES[state.game].label + ')', 'success', 4000);
+      await loadAll();
+    } else {
+      showToast('ℹ️ Đã có dữ liệu mới nhất rồi.', 'info');
+    }
+  } catch (e) {
+    console.error('[crawl]', e);
+    showToast('❌ Crawl thất bại. Thử lại sau.', 'error');
+  } finally {
+    btn.disabled = false;
+    btn.innerHTML = origHtml;
+  }
+}
+
 // ─── RENDER HELPERS ───────────────────────────────────
 function ball(num, cls, size) {
   cls = cls || 'main'; size = size ? ' ball--' + size : '';
   return '<span class="ball ball--' + cls + size + '">' + pad(num) + '</span>';
 }
 function pad(n) { return String(n).padStart(2, '0'); }
-function esc(s) { return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;'); }
+function esc(s) { return String(s).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;'); }
 
 function showPredSkeleton() {
   var el = document.getElementById('pred-list');
@@ -278,9 +307,9 @@ function renderStats(stats, preds) {
     { val: lat.ky ? '#' + pad(lat.ky) : '—', label: 'Kỳ gần nhất' },
     { val: lat.ngay || '—', label: 'Ngày quay' },
     { val: s.avg ? 'Σ' + Math.round(s.avg) : '—', label: 'Tổng TB' },
-  ].map(function(d) {
+  ].map(function (d) {
     return '<div class="stat-pill"><div class="stat-pill__val">' + esc(String(d.val)) +
-           '</div><div class="stat-pill__label">' + esc(d.label) + '</div></div>';
+      '</div><div class="stat-pill__label">' + esc(d.label) + '</div></div>';
   }).join('');
   var hd = document.getElementById('hero-draws');
   if (hd) hd.textContent = stats.total || '--';
@@ -294,7 +323,7 @@ function renderHeroLastDraw(r) {
   var cfg = gameCfg();
   var balls = [];
   for (var i = 1; i <= cfg.mainN; i++) balls.push(r['s' + i]);
-  var html = balls.map(function(n) { return ball(n, 'main'); }).join('');
+  var html = balls.map(function (n) { return ball(n, 'main'); }).join('');
   if (cfg.hasPower && r.power) html += ball(r.power, 'power');
   else if (cfg.hasDb && r.db) html += ball(r.db, 'db');
   el.innerHTML = html;
@@ -307,7 +336,7 @@ function renderHeroFeatured(preds) {
   var cfg = gameCfg();
   var bEl = document.getElementById('feat-balls');
   if (bEl) {
-    var html = (p0.nums || []).map(function(n) { return ball(n, 'main', 'lg'); }).join('');
+    var html = (p0.nums || []).map(function (n) { return ball(n, 'main', 'lg'); }).join('');
     if (cfg.hasPower && p0.db) html += '<div class="feat-card__sep">|</div>' + ball(p0.db, 'power', 'lg');
     else if (cfg.hasDb && p0.db) html += '<div class="feat-card__sep">|</div>' + ball(p0.db, 'db', 'lg');
     bEl.innerHTML = html;
@@ -325,22 +354,22 @@ function renderHeroFeatured(preds) {
 function buildExplain(p, preds) {
   if (!preds) return '';
   var cfg = gameCfg();
-  var hotSet = new Set((preds.hot_numbers || []).map(function(r) { return r.so; }));
+  var hotSet = new Set((preds.hot_numbers || []).map(function (r) { return r.so; }));
   var gapArr = preds.gap_numbers || [];
-  var gapSet = new Set(gapArr.map(function(r) { return r.so; }));
+  var gapSet = new Set(gapArr.map(function (r) { return r.so; }));
   var nums = p.nums || [];
-  var hotNums = nums.filter(function(n) { return hotSet.has(n); });
-  var gapNums = nums.filter(function(n) { return gapSet.has(n); });
-  var evens   = nums.filter(function(n) { return n % 2 === 0; });
-  var lo = nums.filter(function(n) { return n <= Math.floor(cfg.mainMax / 3); }).length;
-  var mid = nums.filter(function(n) { return n > Math.floor(cfg.mainMax / 3) && n <= Math.floor(cfg.mainMax * 2 / 3); }).length;
-  var hi = nums.filter(function(n) { return n > Math.floor(cfg.mainMax * 2 / 3); }).length;
-  var avgGap = gapArr.length > 0 ? Math.round(gapArr.reduce(function(a,r){ return a+r.gap; },0)/gapArr.length) : 0;
+  var hotNums = nums.filter(function (n) { return hotSet.has(n); });
+  var gapNums = nums.filter(function (n) { return gapSet.has(n); });
+  var evens = nums.filter(function (n) { return n % 2 === 0; });
+  var lo = nums.filter(function (n) { return n <= Math.floor(cfg.mainMax / 3); }).length;
+  var mid = nums.filter(function (n) { return n > Math.floor(cfg.mainMax / 3) && n <= Math.floor(cfg.mainMax * 2 / 3); }).length;
+  var hi = nums.filter(function (n) { return n > Math.floor(cfg.mainMax * 2 / 3); }).length;
+  var avgGap = gapArr.length > 0 ? Math.round(gapArr.reduce(function (a, r) { return a + r.gap; }, 0) / gapArr.length) : 0;
   return '<p>🔥 <strong>' + hotNums.length + ' hot numbers</strong>' +
     (hotNums.length > 0 ? ' (' + hotNums.map(pad).join(', ') + ')' : '') +
     ': xuất hiện nhiều trong ' + (preds.window || 30) + ' kỳ gần nhất</p>' +
     (gapNums.length > 0 ? '<p>⏳ <strong>' + gapNums.length + ' overdue</strong>' +
-    ' (' + gapNums.map(pad).join(', ') + '): avg gap ~' + avgGap + ' kỳ</p>' : '') +
+      ' (' + gapNums.map(pad).join(', ') + '): avg gap ~' + avgGap + ' kỳ</p>' : '') +
     '<p>⚖️ Tỷ lệ chẵn/lẻ: <strong>' + evens.length + '/' + (nums.length - evens.length) + '</strong></p>' +
     '<p>📊 Phân bố: thấp <strong>' + lo + '</strong> · giữa <strong>' + mid + '</strong> · cao <strong>' + hi + '</strong></p>';
 }
@@ -350,50 +379,50 @@ function renderPredictions(preds) {
   if (!el) return;
   var cfg = gameCfg();
   var ps = preds.predictions || [];
-  var savedSet = new Set(state.saved.map(function(s) { return s._key; }));
-  el.innerHTML = ps.map(function(p, i) {
+  var savedSet = new Set(state.saved.map(function (s) { return s._key; }));
+  el.innerHTML = ps.map(function (p, i) {
     var key = (p.nums || []).join(',') + '|' + (p.db || 0) + '|' + state.game;
     var isSaved = savedSet.has(key);
-    var sum = (p.nums || []).reduce(function(a,b){return a+b;}, 0);
+    var sum = (p.nums || []).reduce(function (a, b) { return a + b; }, 0);
     var dbHtml = '';
     if (cfg.hasPower && p.db) dbHtml = '<span class="pred-card__sep">|</span>' + ball(p.db, 'power');
     else if (cfg.hasDb && p.db) dbHtml = '<span class="pred-card__sep">|</span>' + ball(p.db, 'db');
     return (
       '<div class="pred-card" id="pred-card-' + i + '">' +
-        '<div class="pred-card__body">' +
-          '<div class="pred-card__head">' +
-            '<div class="pred-card__meta">' +
-              '<span class="pred-card__num">#' + (i+1) + '</span>' +
-              '<span class="pred-card__name">' + esc(p.ten) + '</span>' +
-            '</div>' +
-            '<div class="pred-card__acts">' +
-              '<button class="act-btn" onclick="toggleExplain(' + i + ')">Giải thích AI</button>' +
-              '<button class="act-btn' + (isSaved ? ' act-btn--saved' : '') + '" id="save-btn-' + i + '" onclick="toggleSave(' + i + ')">' +
-                (isSaved ? '★ Đã lưu' : '☆ Save') +
-              '</button>' +
-              '<button class="act-btn" onclick="shareSet(' + i + ')">Share</button>' +
-            '</div>' +
-          '</div>' +
-          '<div class="pred-card__balls">' +
-            (p.nums || []).map(function(n){ return ball(n); }).join('') + dbHtml +
-          '</div>' +
-          '<div class="pred-card__conf">' +
-            '<div class="pred-card__conf-row">' +
-              '<div class="conf-bar" style="flex:1"><div class="conf-bar__fill" style="width:' + (p.confidence||0) + '%"></div></div>' +
-              '<span class="pred-card__conf-pct">' + (p.confidence||0) + '%</span>' +
-              '<span style="font-size:.7rem;color:var(--text-3)">Σ' + sum + '</span>' +
-            '</div>' +
-          '</div>' +
-          '<div class="pred-card__tags">' + renderTags(p.tags || []) + '</div>' +
-        '</div>' +
-        '<div class="explain-panel hidden" id="explain-' + i + '">' + buildExplain(p, preds) + '</div>' +
+      '<div class="pred-card__body">' +
+      '<div class="pred-card__head">' +
+      '<div class="pred-card__meta">' +
+      '<span class="pred-card__num">#' + (i + 1) + '</span>' +
+      '<span class="pred-card__name">' + esc(p.ten) + '</span>' +
+      '</div>' +
+      '<div class="pred-card__acts">' +
+      '<button class="act-btn" onclick="toggleExplain(' + i + ')">Giải thích AI</button>' +
+      '<button class="act-btn' + (isSaved ? ' act-btn--saved' : '') + '" id="save-btn-' + i + '" onclick="toggleSave(' + i + ')">' +
+      (isSaved ? '★ Đã lưu' : '☆ Save') +
+      '</button>' +
+      '<button class="act-btn" onclick="shareSet(' + i + ')">Share</button>' +
+      '</div>' +
+      '</div>' +
+      '<div class="pred-card__balls">' +
+      (p.nums || []).map(function (n) { return ball(n); }).join('') + dbHtml +
+      '</div>' +
+      '<div class="pred-card__conf">' +
+      '<div class="pred-card__conf-row">' +
+      '<div class="conf-bar" style="flex:1"><div class="conf-bar__fill" style="width:' + (p.confidence || 0) + '%"></div></div>' +
+      '<span class="pred-card__conf-pct">' + (p.confidence || 0) + '%</span>' +
+      '<span style="font-size:.7rem;color:var(--text-3)">Σ' + sum + '</span>' +
+      '</div>' +
+      '</div>' +
+      '<div class="pred-card__tags">' + renderTags(p.tags || []) + '</div>' +
+      '</div>' +
+      '<div class="explain-panel hidden" id="explain-' + i + '">' + buildExplain(p, preds) + '</div>' +
       '</div>'
     );
   }).join('');
 }
 
 function renderTags(tags) {
-  return (tags || []).map(function(t) {
+  return (tags || []).map(function (t) {
     var c = t === 'HOT' ? 'hot' : t === 'GAP' ? 'gap' : t === 'BALANCED' ? 'balanced' : 'stable';
     var icon = t === 'HOT' ? '🔥' : t === 'GAP' ? '⏳' : t === 'BALANCED' ? '⚖️' : '📊';
     return '<span class="tag tag--' + c + '">' + icon + ' ' + t + '</span>';
@@ -423,18 +452,18 @@ function renderHotGap(preds) {
   var gapTrend = document.getElementById('gap-trend');
   var hot = preds.hot_numbers || [];
   var gap = preds.gap_numbers || [];
-  if (hotEl) hotEl.innerHTML = hot.map(function(r) {
-    return ball(r.so, 'hot', 'sm') + '<span style="font-size:.65rem;color:var(--text-3);margin-right:4px">' + (r.freq_30||0) + 'x</span>';
+  if (hotEl) hotEl.innerHTML = hot.map(function (r) {
+    return ball(r.so, 'hot', 'sm') + '<span style="font-size:.65rem;color:var(--text-3);margin-right:4px">' + (r.freq_30 || 0) + 'x</span>';
   }).join('');
-  if (gapEl) gapEl.innerHTML = gap.map(function(r) {
-    return ball(r.so, 'gap', 'sm') + '<span style="font-size:.65rem;color:var(--text-3);margin-right:4px">' + (r.gap||0) + 'kỳ</span>';
+  if (gapEl) gapEl.innerHTML = gap.map(function (r) {
+    return ball(r.so, 'gap', 'sm') + '<span style="font-size:.65rem;color:var(--text-3);margin-right:4px">' + (r.gap || 0) + 'kỳ</span>';
   }).join('');
   if (hotTrend && hot.length > 0) {
-    var avg30 = hot.reduce(function(a,r){ return a+r.freq_30; }, 0) / hot.length;
+    var avg30 = hot.reduce(function (a, r) { return a + r.freq_30; }, 0) / hot.length;
     hotTrend.textContent = '↑ TB ' + avg30.toFixed(1) + 'x mỗi 30 kỳ';
   }
   if (gapTrend && gap.length > 0) {
-    var avgGap = gap.reduce(function(a,r){ return a+r.gap; }, 0) / gap.length;
+    var avgGap = gap.reduce(function (a, r) { return a + r.gap; }, 0) / gap.length;
     gapTrend.textContent = 'Avg gap: ~' + Math.round(avgGap) + ' kỳ';
   }
 }
@@ -444,53 +473,53 @@ function renderInsights(freqData, win) {
   var grid = document.getElementById('insight-grid');
   if (!grid) return;
   var cfg = gameCfg();
-  var sorted = freqData.slice().sort(function(a,b){return b.count-a.count;});
-  var byNum  = freqData.slice().sort(function(a,b){return a.so-b.so;});
-  var total  = byNum.reduce(function(a,r){return a+r.count;}, 0);
-  var evens  = byNum.filter(function(r){return r.so%2===0;}).reduce(function(a,r){return a+r.count;}, 0);
-  var evenPct = total > 0 ? Math.round(evens/total*100) : 0;
+  var sorted = freqData.slice().sort(function (a, b) { return b.count - a.count; });
+  var byNum = freqData.slice().sort(function (a, b) { return a.so - b.so; });
+  var total = byNum.reduce(function (a, r) { return a + r.count; }, 0);
+  var evens = byNum.filter(function (r) { return r.so % 2 === 0; }).reduce(function (a, r) { return a + r.count; }, 0);
+  var evenPct = total > 0 ? Math.round(evens / total * 100) : 0;
   var step = Math.ceil(cfg.mainMax / 5);
   var ranges = [];
   for (var s = 1; s <= cfg.mainMax; s += step) ranges.push([s, Math.min(s + step - 1, cfg.mainMax)]);
-  var rangeTotals = ranges.map(function(r) {
-    return byNum.filter(function(d){return d.so>=r[0]&&d.so<=r[1];}).reduce(function(a,d){return a+d.count;},0);
+  var rangeTotals = ranges.map(function (r) {
+    return byNum.filter(function (d) { return d.so >= r[0] && d.so <= r[1]; }).reduce(function (a, d) { return a + d.count; }, 0);
   });
   var maxRangeIdx = rangeTotals.indexOf(Math.max.apply(null, rangeTotals));
   var maxRange = ranges[maxRangeIdx];
-  var minN = sorted[sorted.length-1] ? sorted[sorted.length-1].count : 0;
+  var minN = sorted[sorted.length - 1] ? sorted[sorted.length - 1].count : 0;
   grid.innerHTML = [
     { label: 'Most Active Range', val: maxRange[0] + '–' + maxRange[1], sub: rangeTotals[maxRangeIdx] + ' lần xuất hiện' },
-    { label: 'Odd / Even Split', val: (100-evenPct) + '% / ' + evenPct + '%', sub: 'Lẻ / Chẵn' },
-    { label: 'Số ít xuất hiện nhất', val: pad(sorted[sorted.length-1].so), sub: minN + ' lần (' + (win ? win + ' kỳ' : 'all') + ')' },
-  ].map(function(d) {
+    { label: 'Odd / Even Split', val: (100 - evenPct) + '% / ' + evenPct + '%', sub: 'Lẻ / Chẵn' },
+    { label: 'Số ít xuất hiện nhất', val: pad(sorted[sorted.length - 1].so), sub: minN + ' lần (' + (win ? win + ' kỳ' : 'all') + ')' },
+  ].map(function (d) {
     return '<div class="insight-card">' +
       '<div class="insight-card__label">' + d.label + '</div>' +
       '<div class="insight-card__val">' + d.val + '</div>' +
       '<div class="insight-card__sub">' + d.sub + '</div>' +
-    '</div>';
+      '</div>';
   }).join('');
 }
 
 function renderFreqChart(freqData) {
   var el = document.getElementById('freq-chart');
   if (!el) return;
-  var sorted = freqData.slice().sort(function(a,b){return b.count-a.count;});
+  var sorted = freqData.slice().sort(function (a, b) { return b.count - a.count; });
   var maxCount = sorted[0] ? sorted[0].count : 1;
-  var top5Set  = new Set(sorted.slice(0,5).map(function(r){return r.so;}));
-  var top15Set = new Set(sorted.slice(0,15).map(function(r){return r.so;}));
-  var bot5Set  = new Set(sorted.slice(-5).map(function(r){return r.so;}));
-  var byNum    = freqData.slice().sort(function(a,b){return a.so-b.so;});
-  el.innerHTML = byNum.map(function(r) {
-    var pct = maxCount > 0 ? (r.count/maxCount*100).toFixed(1) : 0;
+  var top5Set = new Set(sorted.slice(0, 5).map(function (r) { return r.so; }));
+  var top15Set = new Set(sorted.slice(0, 15).map(function (r) { return r.so; }));
+  var bot5Set = new Set(sorted.slice(-5).map(function (r) { return r.so; }));
+  var byNum = freqData.slice().sort(function (a, b) { return a.so - b.so; });
+  el.innerHTML = byNum.map(function (r) {
+    var pct = maxCount > 0 ? (r.count / maxCount * 100).toFixed(1) : 0;
     var rowCls = '', badge = '';
-    if (top5Set.has(r.so))  { rowCls = ' freq-row--top5';  badge = '<span class="freq-badge freq-badge--hot">HOT</span>'; }
+    if (top5Set.has(r.so)) { rowCls = ' freq-row--top5'; badge = '<span class="freq-badge freq-badge--hot">HOT</span>'; }
     else if (top15Set.has(r.so)) { rowCls = ' freq-row--top15'; }
     else if (bot5Set.has(r.so)) { rowCls = ' freq-row--bot5'; badge = '<span class="freq-badge freq-badge--cold">LOW</span>'; }
     return '<div class="freq-row' + rowCls + '">' +
       '<span class="freq-row__num">' + pad(r.so) + '</span>' +
       '<div class="freq-row__track"><div class="freq-row__fill" style="width:' + pct + '%"></div></div>' +
       '<span class="freq-row__count">' + r.count + '</span>' + badge +
-    '</div>';
+      '</div>';
   }).join('');
 }
 
@@ -508,11 +537,11 @@ function renderBacktest(bt) {
     { val: bt.hit3_pct != null ? bt.hit3_pct : '—', pct: '%', label: 'Hit ≥3 số / top-2N' },
     { val: bt.total_tested != null ? bt.total_tested : '—', pct: '', label: 'Kỳ kiểm tra' },
   ];
-  el.innerHTML = metrics.map(function(m) {
+  el.innerHTML = metrics.map(function (m) {
     return '<div class="bt-metric">' +
       '<div class="bt-metric__val">' + esc(String(m.val)) + '<span class="bt-metric__pct">' + m.pct + '</span></div>' +
       '<div class="bt-metric__label">' + m.label + '</div>' +
-    '</div>';
+      '</div>';
   }).join('');
 }
 
@@ -525,15 +554,15 @@ function renderHistory(rows, append) {
     tbody.innerHTML = '<tr><td colspan="12" class="empty-cell">Không có dữ liệu</td></tr>';
     return;
   }
-  var html = rows.map(function(r) {
-    var cells = '<td class="ky-cell">#' + pad(r.ky) + '</td><td class="ngay-cell">' + (r.ngay||'') + '</td>';
+  var html = rows.map(function (r) {
+    var cells = '<td class="ky-cell">#' + pad(r.ky) + '</td><td class="ngay-cell">' + (r.ngay || '') + '</td>';
     if (cfg.id === '535') {
-      cells += '<td><span class="' + (r.buoi==='S'?'buoi-s':'buoi-t') + '">' + (r.buoi==='S'?'13H':'21H') + '</span></td>';
+      cells += '<td><span class="' + (r.buoi === 'S' ? 'buoi-s' : 'buoi-t') + '">' + (r.buoi === 'S' ? '13H' : '21H') + '</span></td>';
     }
-    for (var i = 1; i <= cfg.mainN; i++) cells += '<td>' + ball(r['s'+i], 'main', 'sm') + '</td>';
+    for (var i = 1; i <= cfg.mainN; i++) cells += '<td>' + ball(r['s' + i], 'main', 'sm') + '</td>';
     if (cfg.hasPower && r.power) cells += '<td>' + ball(r.power, 'power', 'sm') + '</td>';
-    else if (cfg.hasDb && r.db)  cells += '<td>' + ball(r.db, 'db', 'sm') + '</td>';
-    cells += '<td class="tong-cell">' + (r.tong||'') + '</td>';
+    else if (cfg.hasDb && r.db) cells += '<td>' + ball(r.db, 'db', 'sm') + '</td>';
+    cells += '<td class="tong-cell">' + (r.tong || '') + '</td>';
     return '<tr>' + cells + '</tr>';
   }).join('');
   updateHistoryHeader();
@@ -543,7 +572,7 @@ function renderHistory(rows, append) {
 
 // ─── SAVE PICKS ───────────────────────────────────────
 function initSaved() {
-  try { state.saved = JSON.parse(localStorage.getItem('lotto_saved') || '[]'); } catch(e) { state.saved = []; }
+  try { state.saved = JSON.parse(localStorage.getItem('lotto_saved') || '[]'); } catch (e) { state.saved = []; }
   updateSavedNav();
 }
 function persistSaved() {
@@ -553,7 +582,7 @@ function persistSaved() {
 }
 function updateSavedNav() {
   var cnt = state.saved.length;
-  var el  = document.getElementById('saved-count');
+  var el = document.getElementById('saved-count');
   if (el) el.textContent = cnt;
   var link = document.getElementById('saved-nav-link');
   if (link) link.classList.toggle('hidden', cnt === 0);
@@ -562,8 +591,8 @@ function toggleSave(idx) {
   if (!state.predictions) return;
   var p = state.predictions.predictions[idx];
   if (!p) return;
-  var key = (p.nums||[]).join(',') + '|' + (p.db||0) + '|' + state.game;
-  var existIdx = state.saved.findIndex(function(s){ return s._key === key; });
+  var key = (p.nums || []).join(',') + '|' + (p.db || 0) + '|' + state.game;
+  var existIdx = state.saved.findIndex(function (s) { return s._key === key; });
   if (existIdx >= 0) {
     state.saved.splice(existIdx, 1);
     showToast('Đã xóa khỏi danh sách lưu.', 'info');
@@ -592,7 +621,7 @@ function clearSaved() {
 }
 function renderSaved() {
   var emptyEl = document.getElementById('saved-empty');
-  var listEl  = document.getElementById('saved-list');
+  var listEl = document.getElementById('saved-list');
   if (!listEl) return;
   if (state.saved.length === 0) {
     if (emptyEl) emptyEl.classList.remove('hidden');
@@ -600,22 +629,22 @@ function renderSaved() {
     return;
   }
   if (emptyEl) emptyEl.classList.add('hidden');
-  listEl.innerHTML = state.saved.map(function(p, i) {
-    var sum  = (p.nums||[]).reduce(function(a,b){return a+b;}, 0);
+  listEl.innerHTML = state.saved.map(function (p, i) {
+    var sum = (p.nums || []).reduce(function (a, b) { return a + b; }, 0);
     var gcfg = GAMES[p._game || '535'];
     var dbHtml = '';
     if (gcfg.hasPower && p.db) dbHtml = '<span class="pred-card__sep">|</span>' + ball(p.db, 'power');
     else if (gcfg.hasDb && p.db) dbHtml = '<span class="pred-card__sep">|</span>' + ball(p.db, 'db');
     return '<div class="pred-card">' +
       '<div class="pred-card__body">' +
-        '<div class="pred-card__head">' +
-          '<div class="pred-card__meta"><span class="pred-card__name">' + esc(p._gameLabel || 'Lotto') + ' · ' + (p._saved||'') + '</span></div>' +
-          '<button class="act-btn" onclick="deleteSaved(' + i + ')">✕ Xóa</button>' +
-        '</div>' +
-        '<div class="pred-card__balls">' + (p.nums||[]).map(function(n){ return ball(n); }).join('') + dbHtml + '</div>' +
-        '<div class="pred-card__tags"><span style="font-size:.7rem;color:var(--text-3)">Σ' + sum + '</span>' + renderTags(p.tags||[]) + '</div>' +
+      '<div class="pred-card__head">' +
+      '<div class="pred-card__meta"><span class="pred-card__name">' + esc(p._gameLabel || 'Lotto') + ' · ' + (p._saved || '') + '</span></div>' +
+      '<button class="act-btn" onclick="deleteSaved(' + i + ')">✕ Xóa</button>' +
       '</div>' +
-    '</div>';
+      '<div class="pred-card__balls">' + (p.nums || []).map(function (n) { return ball(n); }).join('') + dbHtml + '</div>' +
+      '<div class="pred-card__tags"><span style="font-size:.7rem;color:var(--text-3)">Σ' + sum + '</span>' + renderTags(p.tags || []) + '</div>' +
+      '</div>' +
+      '</div>';
   }).join('');
 }
 function deleteSaved(i) { state.saved.splice(i, 1); persistSaved(); }
@@ -628,13 +657,13 @@ async function shareSet(idx) {
   var cfg = gameCfg();
   var dbPart = '';
   if ((cfg.hasDb || cfg.hasPower) && p.db) dbPart = '  |  ' + cfg.dbLabel + ': ' + pad(p.db);
-  var text = '[' + cfg.label + '] #' + (idx+1) + ' AI PICK\n' +
-    (p.nums||[]).map(pad).join(' · ') + dbPart +
-    '\nConfidence: ' + (p.confidence||0) + '%\nhttps://lotto535.fly.dev';
+  var text = '[' + cfg.label + '] #' + (idx + 1) + ' AI PICK\n' +
+    (p.nums || []).map(pad).join(' · ') + dbPart +
+    '\nConfidence: ' + (p.confidence || 0) + '%\nhttps://lotto535.fly.dev';
   try {
     if (navigator.share) { await navigator.share({ text: text }); }
     else { await navigator.clipboard.writeText(text); showToast('Đã copy bộ số!', 'success'); }
-  } catch(e) { /* user cancelled */ }
+  } catch (e) { /* user cancelled */ }
 }
 
 // ─── THEME ────────────────────────────────────────────
@@ -642,7 +671,7 @@ function initTheme() {
   var saved = localStorage.getItem('theme') || 'dark';
   applyTheme(saved);
   var btn = document.getElementById('theme-btn');
-  if (btn) btn.addEventListener('click', function() {
+  if (btn) btn.addEventListener('click', function () {
     var cur = document.documentElement.getAttribute('data-theme');
     applyTheme(cur === 'dark' ? 'light' : 'dark');
   });
@@ -650,51 +679,51 @@ function initTheme() {
 function applyTheme(t) {
   document.documentElement.setAttribute('data-theme', t);
   localStorage.setItem('theme', t);
-  var sun  = document.getElementById('icon-sun');
+  var sun = document.getElementById('icon-sun');
   var moon = document.getElementById('icon-moon');
-  if (sun)  sun.classList.toggle('hidden', t === 'dark');
+  if (sun) sun.classList.toggle('hidden', t === 'dark');
   if (moon) moon.classList.toggle('hidden', t === 'light');
 }
 
 // ─── NAVBAR ───────────────────────────────────────────
 function initNavbar() {
-  window.addEventListener('scroll', function() {
+  window.addEventListener('scroll', function () {
     var nb = document.getElementById('navbar');
     if (nb) nb.classList.toggle('scrolled', window.scrollY > 10);
     var top = document.getElementById('btn-top');
     if (top) top.classList.toggle('hidden', window.scrollY < 400);
   });
   var hb = document.getElementById('hamburger');
-  if (hb) hb.addEventListener('click', function() {
+  if (hb) hb.addEventListener('click', function () {
     var nav = document.getElementById('nav-links');
     if (!nav) return;
     var open = nav.classList.toggle('open');
     this.classList.toggle('open', open);
     this.setAttribute('aria-expanded', String(open));
   });
-  document.querySelectorAll('.nav-links a').forEach(function(a) {
-    a.addEventListener('click', function() {
+  document.querySelectorAll('.nav-links a').forEach(function (a) {
+    a.addEventListener('click', function () {
       var nav = document.getElementById('nav-links');
-      var hb  = document.getElementById('hamburger');
+      var hb = document.getElementById('hamburger');
       if (nav) nav.classList.remove('open');
-      if (hb)  { hb.classList.remove('open'); hb.setAttribute('aria-expanded','false'); }
+      if (hb) { hb.classList.remove('open'); hb.setAttribute('aria-expanded', 'false'); }
     });
   });
   // Tab: prediction window
-  document.querySelectorAll('[data-window]').forEach(function(btn) {
-    btn.addEventListener('click', function() {
-      document.querySelectorAll('[data-window]').forEach(function(b){b.classList.remove('active');});
+  document.querySelectorAll('[data-window]').forEach(function (btn) {
+    btn.addEventListener('click', function () {
+      document.querySelectorAll('[data-window]').forEach(function (b) { b.classList.remove('active'); });
       this.classList.add('active');
       state.window = parseInt(this.dataset.window) || 0;
       doRegenerate();
     });
   });
   // Tab: frequency
-  document.querySelectorAll('[data-freq]').forEach(function(btn) {
-    btn.addEventListener('click', function() {
-      document.querySelectorAll('[data-freq]').forEach(function(b){b.classList.remove('active');});
+  document.querySelectorAll('[data-freq]').forEach(function (btn) {
+    btn.addEventListener('click', function () {
+      document.querySelectorAll('[data-freq]').forEach(function (b) { b.classList.remove('active'); });
       this.classList.add('active');
-      loadFrequency(parseInt(this.dataset.freq)||0);
+      loadFrequency(parseInt(this.dataset.freq) || 0);
     });
   });
 }
@@ -704,7 +733,7 @@ function updateSessionInfo() {
   var dateEl = document.getElementById('hero-date');
   var sessEl = document.getElementById('hero-session');
   var now = new Date();
-  if (dateEl) dateEl.textContent = now.toLocaleDateString('vi-VN', {weekday:'short', day:'2-digit', month:'2-digit'});
+  if (dateEl) dateEl.textContent = now.toLocaleDateString('vi-VN', { weekday: 'short', day: '2-digit', month: '2-digit' });
   var h = now.getHours();
   var sess = h < 13 ? 'Trước kỳ 13H' : h < 21 ? 'Sau kỳ 13H · Chờ 21H' : 'Sau kỳ 21H';
   if (sessEl) sessEl.textContent = sess;
@@ -712,16 +741,16 @@ function updateSessionInfo() {
 
 // ─── TOAST ────────────────────────────────────────────
 function showToast(msg, type, dur) {
-  type = type||'info'; dur = dur||3000;
+  type = type || 'info'; dur = dur || 3000;
   var c = document.getElementById('toast-container');
   if (!c) return;
   var t = document.createElement('div');
   t.className = 'toast toast--' + type;
   t.textContent = msg;
   c.appendChild(t);
-  setTimeout(function() {
+  setTimeout(function () {
     t.style.opacity = '0'; t.style.transform = 'scale(0.9)'; t.style.transition = '0.2s';
-    setTimeout(function(){ t.remove(); }, 200);
+    setTimeout(function () { t.remove(); }, 200);
   }, dur);
 }
 
