@@ -26,8 +26,11 @@ ENV PYTHONUNBUFFERED=1
 ENV PYTHONDONTWRITEBYTECODE=1
 # Point Python to find backend package
 ENV PYTHONPATH=/app
+# Timezone Vietnam (UTC+7) — critical for scheduler
+ENV TZ=Asia/Ho_Chi_Minh
 
 EXPOSE 8080
 
-# Init DB (auto-seed if empty), then start API
-CMD ["sh", "-c", "python startup.py && uvicorn backend.api:app --host 0.0.0.0 --port 8080"]
+# Init DB (auto-seed if empty), start scheduler in background, then start API
+# Use subshell so startup.py completes BEFORE uvicorn starts
+CMD ["sh", "-c", "python startup.py && (python -u backend/scheduler.py &) && exec uvicorn backend.api:app --host 0.0.0.0 --port 8080"]
